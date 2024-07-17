@@ -3,6 +3,7 @@ package database
 import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 func getConnectionStr() string {
@@ -11,7 +12,12 @@ func getConnectionStr() string {
 }
 
 func GetDBContext() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(getConnectionStr()), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(getConnectionStr()), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true, // use singular table name, table for `User` would be `user` with this option enabled
+			NoLowerCase:   true, // skip the snake_casing of names
+		},
+	})
 	if err != nil {
 		panic("failed to connect database")
 	}

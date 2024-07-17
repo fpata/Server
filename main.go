@@ -1,8 +1,8 @@
 package main
 
 import (
+	"clinic_server/Patient"
 	"clinic_server/albums"
-	"clinic_server/user"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -13,15 +13,15 @@ func main() {
 
 	router.Use(cors.Default())
 
-	userRouter := router.Group("/users")
-	userRouter.GET("/", user.GetAllUsers)
-	userRouter.GET("/:Id", user.GetUserById)
-	userRouter.POST("/SearchByParams/", user.GetUserByParams)
-	userRouter.GET("/GetBatchResult/", user.GetAllUsersWithPaging)
-	userRouter.POST("/", user.CreateUser)
-	userRouter.PUT("/", user.UpdateUser)
-	userRouter.PATCH("/", user.PatchUser)
-	userRouter.DELETE("/", user.DeleteUser)
+	patientRouter := router.Group("/patients")
+	patientRouter.GET("/", Patient.GetAllPatients)
+	patientRouter.GET("/:Id", Patient.GetPatientById)
+	patientRouter.POST("/SearchByParams/", Patient.GetPatientByParams)
+	patientRouter.GET("/GetBatchResult/", Patient.GetAllPatientsWithPaging)
+	patientRouter.POST("/", Patient.CreatePatient)
+	patientRouter.PUT("/", Patient.UpdatePatient)
+	patientRouter.PATCH("/", Patient.PatchPatient)
+	patientRouter.DELETE("/", Patient.DeletePatient)
 	router.GET("/albums", albums.GetAlbums)
 
 	router.Run("localhost:8088")
