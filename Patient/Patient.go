@@ -49,6 +49,7 @@ type Patient struct {
 	MotherMedicalHistory     types.NullString `json:"MotherMedicalHistory"`
 	PatientReports           []*PatientReport
 	PatientTreatments        []*PatientTreatment
+	PatientAppointments      []*PatientAppointment
 }
 
 type PatientReport struct {
@@ -56,7 +57,7 @@ type PatientReport struct {
 	PatientID      types.NullInt64  `json:"PatientId"`
 	ReportDate     types.NullInt64  `json:"ReportDate"`
 	ReportName     types.NullString `json:"ReportName"`
-	RepoprtFinding types.NullString `json:"RepoprtFinding"`
+	ReportFinding types.NullString `json:"RepoprtFinding"`
 	DoctorName     types.NullString `json:"DoctorName"`
 }
 
@@ -76,6 +77,15 @@ type PatientTreatmentDetail struct {
 	Tooth              types.NullString `json:"Tooth"`
 	Procedure          types.NullString `json:"Procedure"`
 	Advice             types.NullString `json:"Advice"`
+}
+
+type PatientAppointment struct {
+	Id        types.NullInt64 `gorm:"PrimaryKey"`
+	PatientID types.NullInt64 `json:"PatientId"`
+	Date      types.NullInt64 `json:"Date"`
+	Time      types.NullInt64 `json:"Time"`
+	NextDate  types.NullInt64 `json:"NextDate"`
+	NextTime  types.NullInt64 `json:"NextTime"`
 }
 
 type SearchResult struct {
@@ -106,23 +116,30 @@ func GetAllPatients(c *gin.Context) {
 func GetPatientByParams(c *gin.Context) {
 	var searchCondition SearchResult
 	var searchResult []SearchResult
-	if err := c.ShouldBindJSON(&searchCondition); err != nil {
+	err := c.ShouldBindJSON(&searchCondition)
+	if err != nil {
 		fmt.Println(err)
 		c.Error(err)
 		c.Abort()
 		return
 	}
-	var query = getWhereClausenBasedOnSearch(searchCondition)
-	var db *gorm.DB = database.GetDBContext()
-	db.Raw(query).Scan(&searchResult)
-	c.IndentedJSON(http.StatusOK, searchResult)
+	if searchCondition.Id.Value != 0 {
+		GetPatientById(c)
+	} else {
+		var query = getWhereClausenBasedOnSearch(searchCondition)
+		var db *gorm.DB = database.GetDBContext()
+		db.Raw(query).Scan(&searchResult)
+		c.IndentedJSON(http.StatusOK, searchResult)
+	}
 }
 
 func GetPatientById(c *gin.Context) {
 	patientId := c.Param("Id")
 	var objPatient = Patient{}
 	var db *gorm.DB = database.GetDBContext()
-	error := db.Model(&objPatient).Preload("PatientTreatments").Preload("PatientTreatments.PatientTreatmentDetails").Preload("PatientReports").First(&objPatient, patientId).Error
+	error := db.Model(&objPatient).Preload("PatientTreatments").Preload("PatientTreatments.PatientTreatmentDetails").
+		Preload("PatientReports").Preload("PatientAppointments").
+		First(&objPatient, patientId).Error
 	if error != nil {
 		fmt.Println(error)
 	}
@@ -182,7 +199,7 @@ func DeletePatient(c *gin.Context) {
 func getWhereClausenBasedOnSearch(searchCondition SearchResult) string {
 	var putAndCondition bool = false
 	var sqlQuery bytes.Buffer
-	sqlQuery.WriteString("Select Id,FirstName,LastName,PrimaryPhone,PrimaryEmail,PermCity from user Where ")
+	sqlQuery.WriteString("Select Id,FirstName,LastName,PrimaryPhone,PrimaryEmail,PermCity from Patient Where ")
 	if len(searchCondition.FirstName.String) != 0 {
 		sqlQuery.WriteString("FirstName like '%")
 		sqlQuery.WriteString(searchCondition.FirstName.String)
