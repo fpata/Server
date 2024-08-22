@@ -3,6 +3,7 @@ package database
 import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 )
 
@@ -17,6 +18,7 @@ func GetDBContext() *gorm.DB {
 			SingularTable: true, // use singular table name, table for `User` would be `user` with this option enabled
 			NoLowerCase:   true, // skip the snake_casing of names
 		},
+		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		panic("failed to connect database")

@@ -1,9 +1,7 @@
 package Patient
 
 import (
-	"bytes"
 	"clinic_server/database"
-	"clinic_server/types"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,90 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
-
-type Patient struct {
-	Id                       types.NullInt64  `gorm:"PrimaryKey"`
-	FirstName                types.NullString `json:"FirstName"`
-	LastName                 types.NullString `json:"LastName"`
-	MiddleName               types.NullString `json:"MiddleName"`
-	Age                      types.NullInt64  `json:"Age"`
-	Gender                   types.NullInt64  `json:"Gender"`
-	UserName                 types.NullString `json:"UserName"`
-	Password                 types.NullString `json:"Password"`
-	PermAddress1             types.NullString `json:"PermAddress1"`
-	PermAddress2             types.NullString `json:"PermAddress2"`
-	PermCity                 types.NullString `json:"PermCity"`
-	PermState                types.NullString `json:"PermState"`
-	PermCountry              types.NullString `json:"PermCountry"`
-	PermPostalCode           types.NullString `json:"PermPostalCode"`
-	CorrAddress1             types.NullString `json:"CorrAddress1"`
-	CorrAddress2             types.NullString `json:"CorrAddress2"`
-	CorrCity                 types.NullString `json:"CorrCity"`
-	CorrState                types.NullString `json:"CorrState"`
-	CorrCountry              types.NullString `json:"CorrCountry"`
-	CorrPostalCode           types.NullString `json:"CorrPostalCode"`
-	PrimaryPhone             types.NullString `json:"PrimaryPhone"`
-	PrimaryEmail             types.NullString `json:"PrimaryEmail"`
-	SecondaryPhone           types.NullString `json:"SecondaryPhone"`
-	SecondaryEmail           types.NullString `json:"SecondaryEmail"`
-	EmergencyContactName     types.NullString `json:"EmergencyContactName"`
-	EmergencyContactEmail    types.NullString `json:"EmergencyContactEmail"`
-	EmergencyContactPhone    types.NullString `json:"EmergencyContactPhone"`
-	EmergencyContactRelation types.NullString `json:"EmergencyContactRelation"`
-	ExistingDieases          types.NullString `json:"ExistingDieases"`
-	Medications              types.NullString `json:"Medications"`
-	Allergies                types.NullString `json:"Allergies"`
-	FatherMedicalHistory     types.NullString `json:"FatherMedicalHistory"`
-	MotherMedicalHistory     types.NullString `json:"MotherMedicalHistory"`
-	PatientReports           []*PatientReport
-	PatientTreatments        []*PatientTreatment
-	PatientAppointments      []*PatientAppointment
-}
-
-type PatientReport struct {
-	Id             types.NullInt64  `gorm:"PrimaryKey"`
-	PatientID      types.NullInt64  `json:"PatientId"`
-	ReportDate     types.NullInt64  `json:"ReportDate"`
-	ReportName     types.NullString `json:"ReportName"`
-	ReportFinding types.NullString `json:"RepoprtFinding"`
-	DoctorName     types.NullString `json:"DoctorName"`
-}
-
-type PatientTreatment struct {
-	Id                      types.NullInt64  `gorm:"PrimaryKey"`
-	PatientID               types.NullInt64  `json:"PatientId"`
-	ChiefComplaint          types.NullString `json:"ChiefComplaint"`
-	Observation             types.NullString `json:"Observation"`
-	TreatmentPlan           types.NullString `json:"TreatmentPlan"`
-	PatientTreatmentDetails []*PatientTreatmentDetail
-}
-
-type PatientTreatmentDetail struct {
-	Id                 types.NullInt64  `gorm:"PrimaryKey"`
-	PatientID          types.NullInt64  `json:"PatientId"`
-	PatientTreatmentID types.NullInt64  `json:"PatientTreatmentID"`
-	Tooth              types.NullString `json:"Tooth"`
-	Procedure          types.NullString `json:"Procedure"`
-	Advice             types.NullString `json:"Advice"`
-}
-
-type PatientAppointment struct {
-	Id        types.NullInt64 `gorm:"PrimaryKey"`
-	PatientID types.NullInt64 `json:"PatientId"`
-	Date      types.NullInt64 `json:"Date"`
-	Time      types.NullInt64 `json:"Time"`
-	NextDate  types.NullInt64 `json:"NextDate"`
-	NextTime  types.NullInt64 `json:"NextTime"`
-}
-
-type SearchResult struct {
-	Id           types.NullInt64  `gorm:"PrimaryKey"`
-	FirstName    types.NullString `json:"FirstName"`
-	LastName     types.NullString `json:"LastName"`
-	PrimaryPhone types.NullString `json:"PrimaryPhone"`
-	PrimaryEmail types.NullString `json:"PrimaryEmail"`
-	PermCity     types.NullString `json:"PermCity"`
-}
 
 var patients = []Patient{}
 
@@ -111,26 +25,6 @@ func GetAllPatients(c *gin.Context) {
 	var db *gorm.DB = database.GetDBContext()
 	db.Table("Patient").Find(&patients)
 	c.IndentedJSON(http.StatusOK, patients)
-}
-
-func GetPatientByParams(c *gin.Context) {
-	var searchCondition SearchResult
-	var searchResult []SearchResult
-	err := c.ShouldBindJSON(&searchCondition)
-	if err != nil {
-		fmt.Println(err)
-		c.Error(err)
-		c.Abort()
-		return
-	}
-	if searchCondition.Id.Value != 0 {
-		GetPatientById(c)
-	} else {
-		var query = getWhereClausenBasedOnSearch(searchCondition)
-		var db *gorm.DB = database.GetDBContext()
-		db.Raw(query).Scan(&searchResult)
-		c.IndentedJSON(http.StatusOK, searchResult)
-	}
 }
 
 func GetPatientById(c *gin.Context) {
@@ -194,54 +88,4 @@ func DeletePatient(c *gin.Context) {
 	var db *gorm.DB = database.GetDBContext()
 	db.Delete(&Patient{}, patientId)
 	c.IndentedJSON(http.StatusOK, "")
-}
-
-func getWhereClausenBasedOnSearch(searchCondition SearchResult) string {
-	var putAndCondition bool = false
-	var sqlQuery bytes.Buffer
-	sqlQuery.WriteString("Select Id,FirstName,LastName,PrimaryPhone,PrimaryEmail,PermCity from Patient Where ")
-	if len(searchCondition.FirstName.String) != 0 {
-		sqlQuery.WriteString("FirstName like '%")
-		sqlQuery.WriteString(searchCondition.FirstName.String)
-		sqlQuery.WriteString("%'")
-		putAndCondition = true
-	}
-	if len(searchCondition.LastName.String) != 0 {
-		if putAndCondition {
-			sqlQuery.WriteString(" And ")
-		}
-		sqlQuery.WriteString(" LastName like '%")
-		sqlQuery.WriteString(searchCondition.LastName.String)
-		sqlQuery.WriteString("%'")
-		putAndCondition = true
-	}
-	if len(searchCondition.PrimaryEmail.String) != 0 {
-		if putAndCondition {
-			sqlQuery.WriteString(" And ")
-		}
-		sqlQuery.WriteString(" PrimaryEmail like '%")
-		sqlQuery.WriteString(searchCondition.PrimaryEmail.String)
-		sqlQuery.WriteString("%'")
-		putAndCondition = true
-	}
-	if len(searchCondition.PrimaryPhone.String) != 0 {
-		if putAndCondition {
-			sqlQuery.WriteString(" And ")
-		}
-		sqlQuery.WriteString(" PrimaryPhone like '%")
-		sqlQuery.WriteString(searchCondition.PrimaryPhone.String)
-		sqlQuery.WriteString("%'")
-		putAndCondition = true
-	}
-	if len(searchCondition.PermCity.String) != 0 {
-		if putAndCondition {
-			sqlQuery.WriteString(" And ")
-		}
-		sqlQuery.WriteString(" PermCity like '%")
-		sqlQuery.WriteString(searchCondition.PermCity.String)
-		sqlQuery.WriteString("%'")
-		putAndCondition = true
-	}
-	fmt.Println(sqlQuery.String())
-	return sqlQuery.String()
 }

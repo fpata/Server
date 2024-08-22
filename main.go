@@ -23,6 +23,7 @@ func main() {
 	patientRouter.PATCH("/", Patient.PatchPatient)
 	patientRouter.DELETE("/", Patient.DeletePatient)
 	router.GET("/albums", albums.GetAlbums)
+	router.POST("/login/", Patient.ValidateLogin)
 
 	router.Run("localhost:8088")
 }
