@@ -9,6 +9,7 @@ type Patient struct {
 	MiddleName               types.NullString `json:"MiddleName"`
 	Age                      types.NullInt64  `json:"Age"`
 	Gender                   types.NullInt64  `json:"Gender"`
+	Role                     types.NullString `json:"Role"`
 	PermAddress1             types.NullString `json:"PermAddress1"`
 	PermAddress2             types.NullString `json:"PermAddress2"`
 	PermCity                 types.NullString `json:"PermCity"`
@@ -70,10 +71,10 @@ type PatientTreatmentDetail struct {
 type PatientAppointment struct {
 	Id        types.NullInt64  `gorm:"PrimaryKey"`
 	PatientID types.NullInt64  `json:"PatientId"`
+	FirstName types.NullString `json:"FirstName"`
+	LastName  types.NullString `json:"LastName"`
 	Date      types.NullString `json:"Date"`
 	Time      types.NullString `json:"Time"`
-	NextDate  types.NullString `json:"NextDate"`
-	NextTime  types.NullString `json:"NextTime"`
 }
 
 type SearchResult struct {
