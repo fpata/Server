@@ -69,12 +69,14 @@ type PatientTreatmentDetail struct {
 }
 
 type PatientAppointment struct {
-	Id        types.NullInt64  `gorm:"PrimaryKey"`
-	PatientID types.NullInt64  `json:"PatientId"`
-	FirstName types.NullString `json:"FirstName"`
-	LastName  types.NullString `json:"LastName"`
-	Date      types.NullString `json:"Date"`
-	Time      types.NullString `json:"Time"`
+	Id            types.NullInt64  `gorm:"PrimaryKey"`
+	PatientID     types.NullInt64  `json:"PatientId"`
+	PatientName   types.NullString `json:"PatientName"`
+	ApptDate      types.NullString `json:"ApptDate"`
+	ApptTime      types.NullString `json:"ApptTime"`
+	TreatmentName types.NullString `json:"TreatmentName"`
+	DoctorName    types.NullString `json:"DoctorName"`
+	DoctorID      types.NullInt64  `json:"DoctorId"`
 }
 
 type SearchResult struct {

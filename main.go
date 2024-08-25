@@ -24,6 +24,6 @@ func main() {
 	patientRouter.DELETE("/", Patient.DeletePatient)
 	router.GET("/albums", albums.GetAlbums)
 	router.POST("/login/", Patient.ValidateLogin)
-
+	router.GET("/dashboard", Patient.GetDashboardInformation)
 	router.Run("localhost:8088")
 }

@@ -6,4 +6,5 @@ type Login struct {
 	Id       types.NullInt64  `gorm:"PrimaryKey"`
 	UserName types.NullString `json:"UserName"`
 	Password types.NullString `json:"Password"`
+	Role     types.NullString `json:"Role"`
 }
