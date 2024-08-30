@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -13,27 +12,11 @@ import (
 
 var patients = []Patient{}
 
-func GetAllPatientsWithPaging(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.Query("limit"))
-	offset, _ := strconv.Atoi(c.Query("offset"))
-	var db *gorm.DB = database.GetDBContext()
-	db.Table("Patient").Limit(limit).Offset(offset).Find(&patients)
-	c.IndentedJSON(http.StatusOK, patients)
-}
-
-func GetAllPatients(c *gin.Context) {
-	var db *gorm.DB = database.GetDBContext()
-	db.Table("Patient").Find(&patients)
-	c.IndentedJSON(http.StatusOK, patients)
-}
-
 func GetPatientById(c *gin.Context) {
-	patientId := c.Param("Id")
+	patientId := c.Param("ID")
 	var objPatient = Patient{}
 	var db *gorm.DB = database.GetDBContext()
-	error := db.Model(&objPatient).Preload("PatientTreatments").Preload("PatientTreatments.PatientTreatmentDetails").
-		Preload("PatientReports").Preload("PatientAppointments").
-		First(&objPatient, patientId).Error
+	error := db.Model(&objPatient).First(&objPatient, patientId).Error
 	if error != nil {
 		fmt.Println(error)
 	}
@@ -64,7 +47,7 @@ func UpdatePatient(c *gin.Context) {
 	} else {
 		fmt.Println(updateResult.RowsAffected)
 	}
-	c.IndentedJSON(http.StatusOK, objPatient)
+	c.IndentedJSON(http.StatusOK, true)
 }
 
 func PatchPatient(c *gin.Context) {
@@ -84,7 +67,7 @@ func PatchPatient(c *gin.Context) {
 }
 
 func DeletePatient(c *gin.Context) {
-	patientId := c.Query("Id")
+	patientId := c.Query("ID")
 	var db *gorm.DB = database.GetDBContext()
 	db.Delete(&Patient{}, patientId)
 	c.IndentedJSON(http.StatusOK, "")

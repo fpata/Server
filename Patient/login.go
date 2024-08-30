@@ -3,13 +3,12 @@ package Patient
 import (
 	"clinic_server/database"
 	"fmt"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-var login = Login{}
+var login = LoginModel{}
 
 func ValidateLogin(c *gin.Context) {
 	err := c.ShouldBindJSON(&login)
@@ -19,8 +18,7 @@ func ValidateLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	var Id int64 = 0
 	var db *gorm.DB = database.GetDBContext()
-	db.Table("Login").Where("Username = ? AND Password = ?", login.UserName, login.Password).Select("Id").Find(&Id)
-	c.IndentedJSON(200, gin.H{"Id": strconv.Itoa((int)(Id))})
+	db.Table("Login").Where("Username = ? AND Password = ?", login.UserName, login.Password).Scan(&login)
+	c.IndentedJSON(200, login)
 }

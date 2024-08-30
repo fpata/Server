@@ -20,7 +20,7 @@ func GetPatientByParams(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	if searchCondition.Id.Int64 != 0 {
+	if searchCondition.ID.Int64 != 0 {
 		GetPatientById(c)
 	} else {
 		var query = getWhereClausenBasedOnSearch(searchCondition)
