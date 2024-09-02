@@ -3,7 +3,7 @@ package Patient
 import "clinic_server/types"
 
 type Patient struct {
-	ID                       types.NullInt64  `gorm:"PrimaryKey" AutoCreate`
+	ID                       types.NullInt64  `gorm:"PrimaryKey"`
 	FirstName                types.NullString `json:"FirstName"`
 	LastName                 types.NullString `json:"LastName"`
 	MiddleName               types.NullString `json:"MiddleName"`
@@ -83,4 +83,12 @@ type SearchResult struct {
 	PrimaryPhone types.NullString `json:"PrimaryPhone"`
 	PrimaryEmail types.NullString `json:"PrimaryEmail"`
 	PermCity     types.NullString `json:"PermCity"`
+}
+
+type PatientViewModel struct {
+	Patient                 Patient
+	PatientAppointments     []*PatientAppointment
+	PatientReports          []*PatientReport
+	PatientTreatments       []*PatientTreatment
+	PatientTreatmentDetails []*PatientTreatmentDetail
 }
