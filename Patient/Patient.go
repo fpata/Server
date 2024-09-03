@@ -83,8 +83,8 @@ func SavePatientArrays[pa PatientArray](patientArray []*pa, db *gorm.DB, pvm Pat
 					initialPatientTreatmentId = reflect.ValueOf(arrayVal).Elem().FieldByName("ID").Int()
 				}
 				reflect.ValueOf(arrayVal).Elem().FieldByName("ID").SetInt(intVal)
-				db.Save(&arrayVal)
 			}
+			db.Save(&arrayVal)
 			if isPatientTreatment {
 				for _, ptd := range pvm.PatientTreatmentDetails {
 					if ptd.PatientTreatmentID == initialPatientTreatmentId && initialPatientTreatmentId <= 0 {
