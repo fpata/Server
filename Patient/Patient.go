@@ -33,14 +33,14 @@ func CreatePatient(c *gin.Context) {
 	var db *gorm.DB = database.GetDBContext()
 	db.Create(&patientViewModel.Patient)
 	var patientId = patientViewModel.Patient.ID
-	UpdatePatientIDInArrays(patientViewModel.PatientAppointments, patientId)
-	db.Create(&patientViewModel.PatientAppointments)
-	UpdatePatientIDInArrays(patientViewModel.PatientReports, patientId)
-	db.Create(&patientViewModel.PatientReports)
-	UpdatePatientIDInArrays(patientViewModel.PatientTreatments, patientId)
-	db.Create(&patientViewModel.PatientTreatments)
-	UpdatePatientIDInArrays(patientViewModel.PatientTreatmentDetails, patientId)
-	db.Create(&patientViewModel.PatientTreatmentDetails)
+	UpdatePatientIDInArrays(patientViewModel.PatientAppointments, patientId, patientViewModel)
+	UpdatePatientIDInArrays(patientViewModel.PatientReports, patientId, patientViewModel)
+	UpdatePatientIDInArrays(patientViewModel.PatientTreatments, patientId, patientViewModel)
+	UpdatePatientIDInArrays(patientViewModel.PatientTreatmentDetails, patientId, patientViewModel)
+	SavePatientArrays(patientViewModel.PatientAppointments, db, patientViewModel)
+	SavePatientArrays(patientViewModel.PatientReports, db, patientViewModel)
+	SavePatientArrays(patientViewModel.PatientTreatments, db, patientViewModel)
+	SavePatientArrays(patientViewModel.PatientTreatmentDetails, db, patientViewModel)
 	c.IndentedJSON(http.StatusOK, &patientViewModel)
 }
 
@@ -63,7 +63,7 @@ func DeletePatient(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "")
 }
 
-func UpdatePatientIDInArrays[pa PatientArray](patientArray []*pa, patientId int64) {
+func UpdatePatientIDInArrays[pa PatientArray](patientArray []*pa, patientId int64, pvm PatientViewModel) {
 	if patientArray != nil || len(patientArray) > 0 {
 		for _, arrayVal := range patientArray {
 			reflect.ValueOf(arrayVal).Elem().FieldByName("PatientID").SetInt(patientId)
@@ -72,20 +72,23 @@ func UpdatePatientIDInArrays[pa PatientArray](patientArray []*pa, patientId int6
 }
 
 func SavePatientArrays[pa PatientArray](patientArray []*pa, db *gorm.DB, pvm PatientViewModel) {
-	var intVal types.NullInt64
-	intVal.Int64 = 0
-
-	if !(patientArray == nil || len(patientArray) > 0) {
+	var intVal int64 = 0
+	var initialPatientTreatmentId int64 = 0
+	if patientArray != nil || len(patientArray) > 0 {
+		var isPatientTreatment bool = (reflect.TypeOf(patientArray[0]).String() == "*Patient.PatientTreatment")
 		for _, arrayVal := range patientArray {
-			var value = reflect.ValueOf(&arrayVal).Elem().FieldByName("ID")
-			if value.Int() <= intVal.Int64 {
-				reflect.ValueOf(&arrayVal).Elem().FieldByName("ID").Set(reflect.ValueOf(intVal))
+			var value = reflect.ValueOf(arrayVal).Elem().FieldByName("ID").Int()
+			if value <= intVal {
+				if isPatientTreatment {
+					initialPatientTreatmentId = reflect.ValueOf(arrayVal).Elem().FieldByName("ID").Int()
+				}
+				reflect.ValueOf(arrayVal).Elem().FieldByName("ID").SetInt(intVal)
+				db.Save(&arrayVal)
 			}
-			db.Save(&arrayVal)
-			if reflect.TypeOf(arrayVal).Kind().String() == "PatientTreatment" {
+			if isPatientTreatment {
 				for _, ptd := range pvm.PatientTreatmentDetails {
-					if ptd.PatientTreatmentID == value.Int() {
-						ptd.PatientTreatmentID = reflect.ValueOf(&arrayVal).Elem().FieldByName("ID").Int()
+					if ptd.PatientTreatmentID == initialPatientTreatmentId && initialPatientTreatmentId <= 0 {
+						ptd.PatientTreatmentID = reflect.ValueOf(arrayVal).Elem().FieldByName("ID").Int()
 					}
 				}
 			}

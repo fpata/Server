@@ -3,7 +3,7 @@ package Patient
 import "clinic_server/types"
 
 type LoginModel struct {
-	Id       types.NullInt64  `gorm:"PrimaryKey"`
+	ID       types.NullInt64  `gorm:"PrimaryKey"`
 	UserName types.NullString `json:"UserName"`
 	Password types.NullString `json:"Password"`
 	Role     types.NullString `json:"Role"`
