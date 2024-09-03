@@ -3,7 +3,7 @@ package Patient
 import "clinic_server/types"
 
 type Patient struct {
-	ID                       types.NullInt64  `gorm:"PrimaryKey"`
+	ID                       int64            `gorm:"PrimaryKey;->"`
 	FirstName                types.NullString `json:"FirstName"`
 	LastName                 types.NullString `json:"LastName"`
 	MiddleName               types.NullString `json:"MiddleName"`
@@ -38,8 +38,8 @@ type Patient struct {
 }
 
 type PatientReport struct {
-	ID            types.NullInt64  `gorm:"PrimaryKey"`
-	PatientID     types.NullInt64  `json:"PatientID"`
+	ID            int64            `gorm:"PrimaryKey;->"`
+	PatientID     int64            `json:"PatientID"`
 	ReportDate    types.NullString `json:"ReportDate"`
 	ReportName    types.NullString `json:"ReportName"`
 	ReportFinding types.NullString `json:"RepoprtFinding"`
@@ -47,8 +47,8 @@ type PatientReport struct {
 }
 
 type PatientTreatment struct {
-	ID                      types.NullInt64  `gorm:"PrimaryKey"`
-	PatientID               types.NullInt64  `json:"PatientId"`
+	ID                      int64            `gorm:"PrimaryKey;->"`
+	PatientID               int64            `json:"PatientID"`
 	ChiefComplaint          types.NullString `json:"ChiefComplaint"`
 	Observation             types.NullString `json:"Observation"`
 	TreatmentPlan           types.NullString `json:"TreatmentPlan"`
@@ -56,9 +56,9 @@ type PatientTreatment struct {
 }
 
 type PatientTreatmentDetail struct {
-	ID                 types.NullInt64  `gorm:"PrimaryKey"`
-	PatientID          types.NullInt64  `json:"PatientId"`
-	PatientTreatmentID types.NullInt64  `json:"PatientTreatmentID"`
+	ID                 int64            `gorm:"PrimaryKey;->"`
+	PatientID          int64            `json:"PatientID"`
+	PatientTreatmentID int64            `json:"PatientTreatmentID"`
 	Tooth              types.NullString `json:"Tooth"`
 	Procedure          types.NullString `json:"Procedure"`
 	Advice             types.NullString `json:"Advice"`
@@ -66,8 +66,8 @@ type PatientTreatmentDetail struct {
 }
 
 type PatientAppointment struct {
-	ID            types.NullInt64  `gorm:"PrimaryKey"`
-	PatientID     types.NullInt64  `json:"PatientId"`
+	ID            int64            `gorm:"PrimaryKey;->"`
+	PatientID     int64            `json:"PatientID"`
 	PatientName   types.NullString `json:"PatientName"`
 	ApptDate      types.NullString `json:"ApptDate"`
 	ApptTime      types.NullString `json:"ApptTime"`
