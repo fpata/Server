@@ -16,27 +16,23 @@ func GetDashboardInformation(c *gin.Context) {
 	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
 	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
 
-	userId := c.Query("Id")
+	userId := c.Query("ID")
 	StartDate := c.DefaultQuery("StartDate", firstOfMonth.Format("dd-mmm-yyyy"))
 	EndDate := c.DefaultQuery("EndDate", lastOfMonth.Format("dd-mmm-yyyy"))
 
 	var LoggedInUserRole string
 	var db *gorm.DB = database.GetDBContext()
-	db.Table("Patient").Where("Id = ?", userId).Select("Role").Scan(&LoggedInUserRole)
-	var subQuery string
+	db.Table("Patient").Where("ID = ?", userId).Select("Role").Scan(&LoggedInUserRole)
+	var subQuery string = "Select * from PatientAppointment Where "
 	switch LoggedInUserRole {
 	case "Patient":
-		subQuery = "PatientId = ? AND (ApptDate Between ? AND ?)"
+		subQuery = subQuery + " PatientId = " + userId + " AND (ApptDate Between " + StartDate + " AND " + EndDate + ")"
 	case "Doctor":
-		subQuery = "DoctorId = ? AND (ApptDate Between ? AND ?)"
+		subQuery = subQuery + " DoctorId = " + userId + " AND (ApptDate Between " + StartDate + " AND " + EndDate + ")"
 	case "Admin":
-		subQuery = "ApptDate Between ? AND ?"
+		subQuery = subQuery + " ApptDate Between " + StartDate + " AND " + EndDate
 	}
 	var PatientAppointments []*PatientAppointment
-	if LoggedInUserRole == "Admin" {
-		db.Table("PatientAppointment").Where(subQuery, StartDate, EndDate).Find(&PatientAppointments)
-	} else {
-		db.Table("PatientAppointment").Where(subQuery, userId, StartDate, EndDate).Find(&PatientAppointments)
-	}
+	db.Table("PatientAppointment").Raw(subQuery).Scan(&PatientAppointments)
 	c.IndentedJSON(http.StatusOK, PatientAppointments)
 }

@@ -5,15 +5,9 @@ import (
 	"net/http"
 	"reflect"
 
-	"clinic_server/types"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
-
-type dummy struct {
-	inty types.NullInt64
-}
 
 func GetPatientById(c *gin.Context) {
 	patientId := c.Param("ID")
