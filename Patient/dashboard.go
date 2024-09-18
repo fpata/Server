@@ -17,8 +17,8 @@ func GetDashboardInformation(c *gin.Context) {
 	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
 
 	userId := c.Query("ID")
-	StartDate := c.DefaultQuery("StartDate", firstOfMonth.Format("dd-mmm-yyyy"))
-	EndDate := c.DefaultQuery("EndDate", lastOfMonth.Format("dd-mmm-yyyy"))
+	StartDate := c.DefaultQuery("StartDate", firstOfMonth.Format("yyyy-mm-dd"))
+	EndDate := c.DefaultQuery("EndDate", lastOfMonth.Format("yyyy-mm-dd"))
 
 	var LoggedInUserRole string
 	var db *gorm.DB = database.GetDBContext()
@@ -26,11 +26,11 @@ func GetDashboardInformation(c *gin.Context) {
 	var subQuery string = "Select * from PatientAppointment Where "
 	switch LoggedInUserRole {
 	case "Patient":
-		subQuery = subQuery + " PatientId = " + userId + " AND (ApptDate Between " + StartDate + " AND " + EndDate + ")"
+		subQuery = subQuery + " PatientId = " + userId + " AND (ApptDate Between '" + StartDate + "' AND '" + EndDate + "')"
 	case "Doctor":
-		subQuery = subQuery + " DoctorId = " + userId + " AND (ApptDate Between " + StartDate + " AND " + EndDate + ")"
+		subQuery = subQuery + " DoctorId = " + userId + " AND (ApptDate Between '" + StartDate + "' AND '" + EndDate + "')"
 	case "Admin":
-		subQuery = subQuery + " ApptDate Between " + StartDate + " AND " + EndDate
+		subQuery = subQuery + " ApptDate Between '" + StartDate + "' AND '" + EndDate + "'"
 	}
 	var PatientAppointments []*PatientAppointment
 	db.Table("PatientAppointment").Raw(subQuery).Scan(&PatientAppointments)
