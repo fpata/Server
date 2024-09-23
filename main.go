@@ -1,7 +1,7 @@
 package main
 
 import (
-	"clinic_server/Patient"
+	"clinic_server/PatientCare"
 	"clinic_server/albums"
 
 	"github.com/gin-contrib/cors"
@@ -14,13 +14,16 @@ func main() {
 	router.Use(cors.Default())
 
 	patientRouter := router.Group("/patients")
-	patientRouter.GET("/:ID", Patient.GetPatientById)
-	patientRouter.POST("/SearchByParams/", Patient.GetPatientByParams)
-	patientRouter.POST("/", Patient.CreatePatient)
-	patientRouter.PUT("/", Patient.UpdatePatient)
-	patientRouter.DELETE("/", Patient.DeletePatient)
+	patientRouter.GET("/:ID", PatientCare.GetPatientById)
+	patientRouter.POST("/SearchByParams/", PatientCare.GetPatientByParams)
+	patientRouter.POST("/", PatientCare.CreatePatient)
+	patientRouter.PUT("/", PatientCare.UpdatePatient)
+	patientRouter.DELETE("/", PatientCare.DeletePatient)
 	router.GET("/albums", albums.GetAlbums)
-	router.POST("/login/", Patient.ValidateLogin)
-	router.GET("/dashboard", Patient.GetDashboardInformation)
+	router.POST("/login/", PatientCare.ValidateLogin)
+	router.GET("/dashboard", PatientCare.GetDashboardInformation)
+	router.NoRoute(func(c *gin.Context) {
+		c.String(404, "Route Not Found")
+	})
 	router.Run("localhost:8088")
 }

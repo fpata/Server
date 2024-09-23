@@ -1,12 +1,12 @@
-package Patient
+package PatientCare
 
 import (
 	"bytes"
 	"clinic_server/database"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -15,9 +15,8 @@ func GetPatientByParams(c *gin.Context) {
 	var searchResult []SearchResult
 	err := c.ShouldBindJSON(&searchCondition)
 	if err != nil {
-		fmt.Println(err)
-		c.Error(err)
-		c.Abort()
+		log.Error().Err(err).Msg("Invalid Search Condition")
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	if searchCondition.ID.Int64 != 0 {
@@ -25,8 +24,12 @@ func GetPatientByParams(c *gin.Context) {
 	} else {
 		var query = getWhereClausenBasedOnSearch(searchCondition)
 		var db *gorm.DB = database.GetDBContext()
-		db.Raw(query).Scan(&searchResult)
-		c.IndentedJSON(http.StatusOK, searchResult)
+		err = db.Raw(query).Scan(&searchResult).Error
+		if err == nil {
+			c.IndentedJSON(http.StatusOK, searchResult)
+		} else {
+			c.AbortWithError(http.StatusInternalServerError, err)
+		}
 	}
 }
 
@@ -76,6 +79,6 @@ func getWhereClausenBasedOnSearch(searchCondition SearchResult) string {
 		sqlQuery.WriteString("%'")
 		putAndCondition = true
 	}
-	fmt.Println(sqlQuery.String())
+	log.Info().Msg(sqlQuery.String())
 	return sqlQuery.String()
 }

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"github.com/rs/zerolog/log"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -21,7 +22,7 @@ func GetDBContext() *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
-		panic("failed to connect database")
+		log.Panic().Err(err).Msg("failed to connect database")
 	}
 	return db
 }

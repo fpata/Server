@@ -1,4 +1,4 @@
-package Patient
+package PatientCare
 
 import (
 	"clinic_server/database"
@@ -6,26 +6,57 @@ import (
 	"reflect"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
 func GetPatientById(c *gin.Context) {
+	var err error
 	patientId := c.Param("ID")
 	var patientViewModel PatientViewModel = PatientViewModel{}
 	var db *gorm.DB = database.GetDBContext()
-	db.Find(&patientViewModel.Patient, patientId)
-	db.Where("PatientID = ?", patientId).Find(&patientViewModel.PatientAppointments)
-	db.Where("PatientID = ?", patientId).Find(&patientViewModel.PatientTreatments)
-	db.Where("PatientID = ?", patientId).Find(&patientViewModel.PatientTreatmentDetails)
-	db.Where("PatientID = ?", patientId).Find(&patientViewModel.PatientReports)
-	c.IndentedJSON(http.StatusOK, patientViewModel)
+	err = db.Find(&patientViewModel.Patient, patientId).Error
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to get patient information")
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	err = db.Where("PatientID = ?", patientId).Find(&patientViewModel.PatientAppointments).Error
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to get patient Appointment")
+	}
+
+	err = db.Where("PatientID = ?", patientId).Find(&patientViewModel.PatientTreatments).Error
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to get patient PatientTreatments")
+	}
+
+	err = db.Where("PatientID = ?", patientId).Find(&patientViewModel.PatientTreatmentDetails).Error
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to get patient PatientTreatmentDetails")
+	}
+
+	err = db.Where("PatientID = ?", patientId).Find(&patientViewModel.PatientReports).Error
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to get patient PatientReports")
+	}
+
+	if err == nil {
+		c.IndentedJSON(http.StatusOK, patientViewModel)
+	} else {
+		c.IndentedJSON(http.StatusFailedDependency, patientViewModel)
+	}
 }
 
 func CreatePatient(c *gin.Context) {
+	var err error
 	var patientViewModel PatientViewModel
-	c.ShouldBind(&patientViewModel)
+	err = c.ShouldBind(&patientViewModel)
 	var db *gorm.DB = database.GetDBContext()
-	db.Create(&patientViewModel.Patient)
+	err = db.Create(&patientViewModel.Patient).Error
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to get Patient Appointment information")
+	}
 	var patientId = patientViewModel.Patient.ID
 	UpdatePatientIDInArrays(patientViewModel.PatientAppointments, patientId, patientViewModel)
 	UpdatePatientIDInArrays(patientViewModel.PatientReports, patientId, patientViewModel)
@@ -42,7 +73,10 @@ func UpdatePatient(c *gin.Context) {
 	var patientViewModel PatientViewModel
 	c.ShouldBind(&patientViewModel)
 	var db *gorm.DB = database.GetDBContext()
-	db.Save(&patientViewModel.Patient)
+	var err = db.Save(&patientViewModel.Patient).Error
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to Update Patient information")
+	}
 	SavePatientArrays(patientViewModel.PatientAppointments, db, patientViewModel)
 	SavePatientArrays(patientViewModel.PatientReports, db, patientViewModel)
 	SavePatientArrays(patientViewModel.PatientTreatments, db, patientViewModel)
@@ -53,7 +87,10 @@ func UpdatePatient(c *gin.Context) {
 func DeletePatient(c *gin.Context) {
 	patientId := c.Query("ID")
 	var db *gorm.DB = database.GetDBContext()
-	db.Delete(&Patient{}, patientId)
+	var err = db.Delete(&Patient{}, patientId).Error
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to delete Patient information")
+	}
 	c.IndentedJSON(http.StatusOK, "")
 }
 
@@ -68,6 +105,7 @@ func UpdatePatientIDInArrays[pa PatientArray](patientArray []*pa, patientId int6
 func SavePatientArrays[pa PatientArray](patientArray []*pa, db *gorm.DB, pvm PatientViewModel) {
 	var intVal int64 = 0
 	var initialPatientTreatmentId int64 = 0
+	var err error
 	if patientArray != nil || len(patientArray) > 0 {
 		var isPatientTreatment bool = (reflect.TypeOf(patientArray[0]).String() == "*Patient.PatientTreatment")
 		for _, arrayVal := range patientArray {
@@ -78,7 +116,10 @@ func SavePatientArrays[pa PatientArray](patientArray []*pa, db *gorm.DB, pvm Pat
 				}
 				reflect.ValueOf(arrayVal).Elem().FieldByName("ID").SetInt(intVal)
 			}
-			db.Save(&arrayVal)
+			err = db.Save(&arrayVal).Error
+			if err != nil {
+				log.Error().Err(err).Msg("Unable to save " + (reflect.TypeOf(arrayVal)).String())
+			}
 			if isPatientTreatment {
 				for _, ptd := range pvm.PatientTreatmentDetails {
 					if ptd.PatientTreatmentID == initialPatientTreatmentId && initialPatientTreatmentId <= 0 {

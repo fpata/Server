@@ -1,4 +1,4 @@
-package Patient
+package PatientCare
 
 import (
 	"clinic_server/database"
@@ -6,10 +6,17 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
 func GetDashboardInformation(c *gin.Context) {
+	var subQuery string = "Select * from PatientAppointment Where "
+	var LoggedInUserRole string
+	var db *gorm.DB = database.GetDBContext()
+	var error error
+	var PatientAppointments []PatientAppointment
+
 	now := time.Now()
 	currentYear, currentMonth, _ := now.Date()
 	currentLocation := now.Location()
@@ -20,10 +27,13 @@ func GetDashboardInformation(c *gin.Context) {
 	StartDate := c.DefaultQuery("StartDate", firstOfMonth.Format("yyyy-mm-dd"))
 	EndDate := c.DefaultQuery("EndDate", lastOfMonth.Format("yyyy-mm-dd"))
 
-	var LoggedInUserRole string
-	var db *gorm.DB = database.GetDBContext()
-	db.Table("Patient").Where("ID = ?", userId).Select("Role").Scan(&LoggedInUserRole)
-	var subQuery string = "Select * from PatientAppointment Where "
+	error = db.Table("Patient").Where("ID = ?", userId).Select("Role").Scan(&LoggedInUserRole).Error
+	if error != nil {
+		log.Error().Err(error).Msg("Unable to get Patient Appointment information")
+	} else {
+		log.Info().Msg("GetDashboardInformation Complete")
+	}
+
 	switch LoggedInUserRole {
 	case "Patient":
 		subQuery = subQuery + " PatientId = " + userId + " AND (ApptDate Between '" + StartDate + "' AND '" + EndDate + "')"
@@ -32,7 +42,18 @@ func GetDashboardInformation(c *gin.Context) {
 	case "Admin":
 		subQuery = subQuery + " ApptDate Between '" + StartDate + "' AND '" + EndDate + "'"
 	}
-	var PatientAppointments []*PatientAppointment
-	db.Table("PatientAppointment").Raw(subQuery).Scan(&PatientAppointments)
-	c.IndentedJSON(http.StatusOK, PatientAppointments)
+	if error == nil {
+		error = db.Table("PatientAppointment").Raw(subQuery).Scan(&PatientAppointments).Error
+		if error != nil {
+			log.Error().Err(error).Msg("Unable to get Patient Appointment information")
+		} else {
+			log.Info().Msg("GetDashboardInformation Complete")
+		}
+	}
+	if error == nil {
+		c.IndentedJSON(http.StatusOK, PatientAppointments)
+	} else {
+		c.AbortWithError(http.StatusInternalServerError, error)
+	}
+
 }

@@ -1,4 +1,4 @@
-package Patient
+package PatientCare
 
 import "clinic_server/types"
 
