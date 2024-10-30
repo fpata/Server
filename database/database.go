@@ -1,6 +1,9 @@
 package database
 
 import (
+	logs "clinic_server/logger"
+
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -14,6 +17,8 @@ func getConnectionStr() string {
 }
 
 func GetDBContext() *gorm.DB {
+	logs.Init(zerolog.InfoLevel)
+
 	db, err := gorm.Open(sqlite.Open(getConnectionStr()), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true, // use singular table name, table for `User` would be `user` with this option enabled
@@ -23,6 +28,7 @@ func GetDBContext() *gorm.DB {
 	})
 	if err != nil {
 		log.Panic().Err(err).Msg("failed to connect database")
+		logs.Error("failed to connect database", err)
 	}
 	return db
 }

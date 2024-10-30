@@ -5,14 +5,17 @@ import (
 	"net/http"
 	"time"
 
+	"clinic_server/logger"
+
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"gorm.io/gorm"
 )
 
 func GetDashboardInformation(c *gin.Context) {
 	var subQuery string = "Select * from PatientAppointment Where "
 	var LoggedInUserRole string
+	logger.Init(zerolog.InfoLevel)
 	var db *gorm.DB = database.GetDBContext()
 	var error error
 	var PatientAppointments []PatientAppointment
@@ -29,9 +32,9 @@ func GetDashboardInformation(c *gin.Context) {
 
 	error = db.Table("Patient").Where("ID = ?", userId).Select("Role").Scan(&LoggedInUserRole).Error
 	if error != nil {
-		log.Error().Err(error).Msg("Unable to get Patient Appointment information")
+		logger.Error("Unable to get Patient Appointment information", error)
 	} else {
-		log.Info().Msg("GetDashboardInformation Complete")
+		logger.Info("GetDashboardInformation Complete")
 	}
 
 	switch LoggedInUserRole {
@@ -45,9 +48,9 @@ func GetDashboardInformation(c *gin.Context) {
 	if error == nil {
 		error = db.Table("PatientAppointment").Raw(subQuery).Scan(&PatientAppointments).Error
 		if error != nil {
-			log.Error().Err(error).Msg("Unable to get Patient Appointment information")
+			logger.Error("Unable to get Patient Appointment information", error)
 		} else {
-			log.Info().Msg("GetDashboardInformation Complete")
+			logger.Info("GetDashboardInformation Complete")
 		}
 	}
 	if error == nil {

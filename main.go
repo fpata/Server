@@ -3,6 +3,7 @@ package main
 import (
 	"clinic_server/PatientCare"
 	"clinic_server/albums"
+	"clinic_server/config"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -25,5 +26,8 @@ func main() {
 	router.NoRoute(func(c *gin.Context) {
 		c.String(404, "Route Not Found")
 	})
-	router.Run("localhost:8088")
+
+	config := config.GetConfiguration()
+	urlp := config.Server.ServerUrl + ":" + config.Server.Port
+	router.Run(urlp)
 }

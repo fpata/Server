@@ -5,7 +5,10 @@ import (
 	"clinic_server/database"
 	"net/http"
 
+	"clinic_server/logger"
+
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -13,9 +16,12 @@ import (
 func GetPatientByParams(c *gin.Context) {
 	var searchCondition SearchResult
 	var searchResult []SearchResult
+
+	logger.Init(zerolog.InfoLevel)
+
 	err := c.ShouldBindJSON(&searchCondition)
 	if err != nil {
-		log.Error().Err(err).Msg("Invalid Search Condition")
+		logger.Error("Invalid Search Condition", err)
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}

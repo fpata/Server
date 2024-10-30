@@ -1,0 +1,8 @@
+{"Server":
+  {"Port": "8088",
+  "ServerUrl":"localhost"
+},
+"Database":{
+  "ConnectionString": "c:/tfs/Learning Projects/Clinic_1/Database/Clinic.db"
+}
+}
