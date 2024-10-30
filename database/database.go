@@ -1,6 +1,7 @@
 package database
 
 import (
+	"clinic_server/config"
 	logs "clinic_server/logger"
 
 	"github.com/rs/zerolog"
@@ -11,15 +12,10 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-func getConnectionStr() string {
-	var connectStr = "c:/tfs/Learning Projects/Clinic_1/Database/Clinic.db"
-	return connectStr
-}
-
 func GetDBContext() *gorm.DB {
 	logs.Init(zerolog.InfoLevel)
 
-	db, err := gorm.Open(sqlite.Open(getConnectionStr()), &gorm.Config{
+	db, err := gorm.Open(sqlite.Open(config.GetConfiguration().Database.ConnectionString), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true, // use singular table name, table for `User` would be `user` with this option enabled
 			NoLowerCase:   true, // skip the snake_casing of names
