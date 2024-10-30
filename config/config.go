@@ -2,12 +2,13 @@ package config
 
 import (
 	"clinic_server/cache"
+	"clinic_server/logger"
 	"encoding/json"
 	"io"
 	"os"
 	"time"
 
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 // Configurations exported
@@ -28,6 +29,7 @@ type DatabaseConfigurations struct {
 }
 
 func GetConfiguration() Configurations {
+	logger.Init(zerolog.DebugLevel)
 	var config Configurations
 	var isError bool = false
 	if value, found := cache.CacheInstance.Get("Configurations"); found {
@@ -39,7 +41,8 @@ func GetConfiguration() Configurations {
 
 		jsonFile, err := os.Open("config.json")
 		if err != nil {
-			log.Error().Err(err).Msg("Failed to open config file")
+
+			logger.Error("Failed to open config file", err)
 			isError = true
 		}
 		defer jsonFile.Close()
@@ -47,14 +50,14 @@ func GetConfiguration() Configurations {
 		// Read the JSON file
 		byteValue, err := io.ReadAll(jsonFile)
 		if err != nil {
-			log.Error().Err(err).Msg("Failed to read config file")
+			logger.Error("Failed to read config file", err)
 			isError = true
 		}
 
 		// Unmarshal the JSON data into the Config struct
 
 		if err := json.Unmarshal(byteValue, &config); err != nil {
-			log.Error().Err(err).Msg("Failed to unmarshal JSON")
+			logger.Error("Failed to unmarshal JSON", err)
 			isError = true
 		}
 		if !isError {
