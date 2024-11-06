@@ -25,9 +25,9 @@ func Init(logLevel zerolog.Level) {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to open log file")
 		}
-
+		multi := zerolog.MultiLevelWriter(os.Stdout, file)
 		// Configure zerolog to write to the log file
-		Logger = zerolog.New(file).With().Timestamp().Logger()
+		Logger = zerolog.New(multi).With().Timestamp().Logger()
 
 		// Set the global log level
 		zerolog.SetGlobalLevel(logLevel)
