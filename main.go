@@ -1,33 +1,47 @@
 package main
 
 import (
-	"clinic_server/PatientCare"
-	"clinic_server/albums"
-	"clinic_server/config"
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
+	"clinic_server/config"
 )
 
 func main() {
-	router := gin.Default()
+	// Load configuration once
+	cfg := config.GetConfiguration()
+	urlp := cfg.Server.ServerUrl + ":" + cfg.Server.Port
 
-	router.Use(cors.Default())
+	// Initialize the router
+	router := SetupRouter()
 
-	patientRouter := router.Group("/patients")
-	patientRouter.GET("/:ID", PatientCare.GetPatientById)
-	patientRouter.POST("/SearchByParams/", PatientCare.GetPatientByParams)
-	patientRouter.POST("/", PatientCare.CreatePatient)
-	patientRouter.PUT("/", PatientCare.UpdatePatient)
-	patientRouter.DELETE("/", PatientCare.DeletePatient)
-	router.GET("/albums", albums.GetAlbums)
-	router.POST("/login/", PatientCare.ValidateLogin)
-	router.GET("/dashboard", PatientCare.GetDashboardInformation)
-	router.NoRoute(func(c *gin.Context) {
-		c.String(404, "Route Not Found")
-	})
+	// Use context for request handling
+	srv := &http.Server{
+		Addr:    urlp,
+		Handler: router,
+	}
 
-	config := config.GetConfiguration()
-	urlp := config.Server.ServerUrl + ":" + config.Server.Port
-	router.Run(urlp)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	// Graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Println("Server exiting")
 }
