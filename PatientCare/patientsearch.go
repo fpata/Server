@@ -1,45 +1,111 @@
 package PatientCare
 
 import (
-	"bytes"
 	"clinic_server/database"
 	"net/http"
 
 	"clinic_server/logger"
 
+	"database/sql"
+	"strings"
+
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"gorm.io/gorm"
 )
 
 func GetPatientByParams(c *gin.Context) {
-	var searchCondition SearchResult
-	var searchResult []SearchResult
-
-	logger.Init(zerolog.InfoLevel)
-
-	err := c.ShouldBindJSON(&searchCondition)
-	if err != nil {
-		logger.Error("Invalid Search Condition", err)
-		c.AbortWithError(http.StatusInternalServerError, err)
+	var searchParams SearchParams
+	if err := c.ShouldBindJSON(&searchParams); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid search parameters",
+			"details": err.Error(),
+		})
 		return
 	}
-	if searchCondition.ID.Int64 != 0 {
+
+	// Handle direct ID lookup
+	if searchParams.ID.Valid && searchParams.ID.Int64 != 0 {
 		GetPatientById(c)
-	} else {
-		var query = getWhereClausenBasedOnSearch(searchCondition)
-		var db *gorm.DB = database.GetDBContext()
-		err = db.Raw(query).Scan(&searchResult).Error
-		if err == nil {
-			c.IndentedJSON(http.StatusOK, searchResult)
-		} else {
-			c.AbortWithError(http.StatusInternalServerError, err)
-		}
+		return
 	}
+
+	// Build query using query builder
+	query, args := buildSearchQuery(searchParams)
+
+	db := database.GetDBContext()
+	if db == nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
+		return
+	}
+
+	var searchResult []SearchResult
+	if err := db.Raw(query, args...).Scan(&searchResult).Error; err != nil {
+		logger.Error("Database query failed", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch patient data"})
+		return
+	}
+
+	if len(searchResult) == 0 {
+		c.JSON(http.StatusOK, []SearchResult{})
+		return
+	}
+
+	c.JSON(http.StatusOK, searchResult)
 }
 
-func getWhereClausenBasedOnSearch(searchCondition SearchResult) string {
+// buildSearchQuery constructs the SQL query and arguments safely
+func buildSearchQuery(params SearchParams) (string, []interface{}) {
+	const baseQuery = `
+		SELECT 
+			Id,
+			FirstName,
+			LastName,
+			PrimaryPhone,
+			PrimaryEmail,
+			PermCity 
+		FROM Patient 
+		WHERE 1=1`
+
+	var (
+		conditions []string
+		args       []interface{}
+		query      strings.Builder
+	)
+
+	query.WriteString(baseQuery)
+
+	// Map of field conditions
+	fieldConditions := map[*sql.NullString]string{
+		&params.FirstName:    "FirstName LIKE ?",
+		&params.LastName:     "LastName LIKE ?",
+		&params.PrimaryEmail: "PrimaryEmail LIKE ?",
+		&params.PrimaryPhone: "PrimaryPhone LIKE ?",
+		&params.PermCity:     "PermCity LIKE ?",
+	}
+
+	// Build conditions and args
+	for field, condition := range fieldConditions {
+		if field.Valid && field.String != "" {
+			conditions = append(conditions, condition)
+			args = append(args, "%"+field.String+"%")
+		}
+	}
+
+	// Add conditions to query
+	for _, condition := range conditions {
+		query.WriteString(" AND ")
+		query.WriteString(condition)
+	}
+
+	// Add order by for consistent results
+	query.WriteString(" ORDER BY Id")
+
+	// Add limit to prevent excessive results
+	query.WriteString(" LIMIT 100")
+
+	return query.String(), args
+}
+
+/*func getWhereClausenBasedOnSearch(searchCondition SearchResult) string {
 	var putAndCondition bool = false
 	var sqlQuery bytes.Buffer
 	sqlQuery.WriteString("Select Id,FirstName,LastName,PrimaryPhone,PrimaryEmail,PermCity from Patient Where ")
@@ -87,4 +153,4 @@ func getWhereClausenBasedOnSearch(searchCondition SearchResult) string {
 	}
 	log.Info().Msg(sqlQuery.String())
 	return sqlQuery.String()
-}
+}*/

@@ -1,6 +1,9 @@
 package PatientCare
 
-import "clinic_server/types"
+import (
+	"clinic_server/types"
+	"database/sql"
+)
 
 type Patient struct {
 	ID                       int64            `gorm:"PrimaryKey;->"`
@@ -76,13 +79,14 @@ type PatientAppointment struct {
 	DoctorID      types.NullInt64  `json:"DoctorId"`
 }
 
+// SearchResult represents the patient search results
 type SearchResult struct {
-	ID           types.NullInt64  `gorm:"PrimaryKey"`
-	FirstName    types.NullString `json:"FirstName"`
-	LastName     types.NullString `json:"LastName"`
-	PrimaryPhone types.NullString `json:"PrimaryPhone"`
-	PrimaryEmail types.NullString `json:"PrimaryEmail"`
-	PermCity     types.NullString `json:"PermCity"`
+	ID           int64          `json:"id"`
+	FirstName    sql.NullString `json:"FirstName"`
+	LastName     sql.NullString `json:"LastName"`
+	PrimaryPhone sql.NullString `json:"PrimaryPhone"`
+	PrimaryEmail sql.NullString `json:"PrimaryEmail"`
+	PermCity     sql.NullString `json:"PermCity"`
 }
 
 type PatientViewModel struct {
@@ -91,4 +95,13 @@ type PatientViewModel struct {
 	PatientReports          []*PatientReport
 	PatientTreatments       []*PatientTreatment
 	PatientTreatmentDetails []*PatientTreatmentDetail
+}
+
+type SearchParams struct {
+	ID           sql.NullInt64  `json:"id"`
+	FirstName    sql.NullString `json:"firstName"`
+	LastName     sql.NullString `json:"lastName"`
+	PrimaryEmail sql.NullString `json:"primaryEmail"`
+	PrimaryPhone sql.NullString `json:"primaryPhone"`
+	PermCity     sql.NullString `json:"permCity"`
 }

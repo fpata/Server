@@ -9,54 +9,82 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
-	"gorm.io/gorm"
 )
 
 func GetDashboardInformation(c *gin.Context) {
-	var subQuery string = "Select * from PatientAppointment Where "
-	var LoggedInUserRole string
 	logger.Init(zerolog.InfoLevel)
-	var db *gorm.DB = database.GetDBContext()
-	var error error
-	var PatientAppointments []PatientAppointment
 
+	db := database.GetDBContext()
+	if db == nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
+		return
+	}
+
+	startDate, endDate, err := getDateRange(c)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userId := c.Query("ID")
+	if userId == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "user ID is required"})
+		return
+	}
+
+	var loggedInUserRole string
+	if err := db.Table("Patient").Where("ID = ?", userId).Select("Role").Scan(&loggedInUserRole).Error; err != nil {
+		logger.Error("Unable to get user role", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to get user role"})
+		return
+	}
+
+	query := `SELECT * FROM PatientAppointment WHERE ApptDate BETWEEN ? AND ?`
+	params := []interface{}{startDate, endDate}
+
+	switch loggedInUserRole {
+	case "Patient":
+		query += " AND PatientId = ?"
+		params = append(params, userId)
+	case "Doctor":
+		query += " AND DoctorId = ?"
+		params = append(params, userId)
+	case "Admin":
+		// No additional filters for admin
+	default:
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "invalid user role"})
+		return
+	}
+
+	var patientAppointments []PatientAppointment
+	if err := db.Raw(query, params...).Scan(&patientAppointments).Error; err != nil {
+		logger.Error("Unable to get Patient Appointment information", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch appointments"})
+		return
+	}
+
+	logger.Info("GetDashboardInformation Complete")
+	c.JSON(http.StatusOK, patientAppointments)
+}
+
+func getDateRange(c *gin.Context) (startDate, endDate string, err error) {
 	now := time.Now()
 	currentYear, currentMonth, _ := now.Date()
 	currentLocation := now.Location()
 	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
 	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
 
-	userId := c.Query("ID")
-	StartDate := c.DefaultQuery("StartDate", firstOfMonth.Format("yyyy-mm-dd"))
-	EndDate := c.DefaultQuery("EndDate", lastOfMonth.Format("yyyy-mm-dd"))
+	startDate = c.DefaultQuery("StartDate", firstOfMonth.Format("2006-01-02"))
+	endDate = c.DefaultQuery("EndDate", lastOfMonth.Format("2006-01-02"))
 
-	error = db.Table("Patient").Where("ID = ?", userId).Select("Role").Scan(&LoggedInUserRole).Error
-	if error != nil {
-		logger.Error("Unable to get Patient Appointment information", error)
-	} else {
-		logger.Info("GetDashboardInformation Complete")
+	_, err = time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return "", "", err
 	}
-
-	switch LoggedInUserRole {
-	case "Patient":
-		subQuery = subQuery + " PatientId = " + userId + " AND (ApptDate Between '" + StartDate + "' AND '" + EndDate + "')"
-	case "Doctor":
-		subQuery = subQuery + " DoctorId = " + userId + " AND (ApptDate Between '" + StartDate + "' AND '" + EndDate + "')"
-	case "Admin":
-		subQuery = subQuery + " ApptDate Between '" + StartDate + "' AND '" + EndDate + "'"
-	}
-	if error == nil {
-		error = db.Table("PatientAppointment").Raw(subQuery).Scan(&PatientAppointments).Error
-		if error != nil {
-			logger.Error("Unable to get Patient Appointment information", error)
-		} else {
-			logger.Info("GetDashboardInformation Complete")
-		}
-	}
-	if error == nil {
-		c.IndentedJSON(http.StatusOK, PatientAppointments)
-	} else {
-		c.AbortWithError(http.StatusInternalServerError, error)
+	_, err = time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return "", "", err
 	}
 
+	return startDate, endDate, nil
 }
