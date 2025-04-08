@@ -3,6 +3,6 @@
   "ServerUrl":"localhost"
 },
 "Database":{
-  "ConnectionString": "c:/tfs/Learning Projects/Clinic_1/Database/Clinic.db"
+  "ConnectionString": "Server=tcp:fpata-sqlserver.database.windows.net,1433;Initial Catalog=ClinicDB;Persist Security Info=True;User ID=fpata;Password=Apple@786110;MultipleActiveResultSets=False;Encrypt=False;TrustServerCertificate=True;Connection Timeout=30;"
 }
 }

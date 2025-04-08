@@ -28,7 +28,7 @@ func SetupRouter() *gin.Engine {
 	router.POST("/login", PatientCare.ValidateLogin)
 	router.POST("/login/", PatientCare.ValidateLogin)
 	router.GET("/dashboard", PatientCare.GetDashboardInformation)
-
+	router.POST("/signup/", PatientCare.CreateClinic)
 	router.NoRoute(func(c *gin.Context) {
 		c.String(404, "Route Not Found")
 	})
